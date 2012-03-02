@@ -1,0 +1,21 @@
+{
+  "author": "David Banham <david@pinion.gg> (http://pinion.gg)",
+  "name": "srcds-info",
+  "description": "A tool to query Source based game servers",
+  "version": "0.0.1",
+  "homepage": "https://github.com/PinionTech/srcds-info",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/PinionTech/srcds-info.git"
+  },
+  "main": "./main.js",
+  "engines": {
+    "node": "~0.6.11"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "scripts": {
+    "test": "node ./test.js"
+  }
+}
