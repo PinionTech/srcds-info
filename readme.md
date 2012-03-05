@@ -17,7 +17,7 @@ npm install srcds-info
 ## Demo
 
 ```javascript
-var srcds = require('./main.js');
+var srcds = require('srcds-info');
 
 srcds.init();
 
