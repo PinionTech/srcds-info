@@ -24,13 +24,19 @@ var onMsg = function(msg, rinfo) {
 	var decoded = {
 		ip: rinfo.address,
 		port: rinfo.port
-	}
+	};
 	var points = [6];
 	for ( var i = 0 ; i < msg.length ; i++ ) {
 		if (msg.readUInt8(i) === 0) {
 			points.push(i);
-		}
-	}
+		};
+	};
+
+	if ( points.length < 2 ) {
+		srcds.client.emit('error' decoded);
+		return;
+	};
+
 	// Here be dragons.
 	// This protocol is outlined here: https://developer.valvesoftware.com/wiki/Server_Queries#Source_servers
 	// Fields are delimited by 0x00 bytes, however things like whether a password is required may also be 0x00

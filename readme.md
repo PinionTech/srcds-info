@@ -56,4 +56,6 @@ Passes back an object with the following properties:
   pw: boolean,
   secure: boolean }
 
+Sometimes servers will send back a blank info response. This seems to be a protection against an old DOS attack. If a stripped packet is received, an 'error' event will be emitted with an object containing ip and port properties.
+
 You may also listen for all of the events emitted by a standard [dgram](http://nodejs.org/docs/latest/api/dgram.html)
