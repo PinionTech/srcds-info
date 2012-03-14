@@ -32,7 +32,7 @@ var onMsg = function(msg, rinfo) {
 		};
 	};
 
-	if ( points.length < 2 ) {
+	if ( points.length < 3 ) {
 		srcds.client.emit('error', decoded);
 		return;
 	};
