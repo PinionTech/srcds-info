@@ -94,7 +94,13 @@ var onMsg = function(msg, rinfo) {
 };
 
 var decString = function(buf, start, end) {
-	return buf.toString('utf8', start, end)
+	if ( end < start ) {
+		return '';
+	} else if ( end > buf.length ) {
+		return '';
+	} else {
+		return buf.toString('utf8', start, end)
+	}
 }
 
 var decHex = function(buf, pos) {
@@ -102,7 +108,11 @@ var decHex = function(buf, pos) {
 }
 
 var decInt = function(buf, pos) {
-	return buf.readUInt8(pos)
+	if ( pos > buf.length ) {
+		return 0;
+	} else {
+		return buf.readUInt8(pos)
+	}
 }
 
 var decSigned = function(buf, pos) {
