@@ -19,28 +19,26 @@ npm install srcds-info
 ```javascript
 var srcds = require('srcds-info');
 
-srcds.init();
+client = srcds('27.50.71.3', 21045);
 
-srcds.client.on('decoded', function(info) {
-	console.log(info);
-	srcds.client.close();
-});
-
-srcds.info('203.217.24.85', 27017, function(err) {
-	if (err) console.error(err)
+client.info('203.217.24.85', 27017, function(err, info) {
+	if (err) {
+        	console.error(err)
+	}
+	else {
+		console.log(info);
+	}
+	client.close();
 });
 ```
 
 ## API
 
-### srcds.init([port]); 
-This takes no callback because dgram doesn't give you anything useful to bind it to. Port is optional. If not defined it will bind to a random port number.
+### srcds(server, port[, options]); 
+Returns a client object for querying. Options is optional. Currently the only option is "timeout" which lets you change how long to wait for a response before emitting an error. The default is 10 seconds.
 
-### srcds.info(ip, port, [callback];
-Queries the given credentials for information and emits the 'decoded' event once there is some useful information. Callback is optional, will only give you an error if something has gone wrong with the low level networking or similar.
-
-### srcds.client.on('decoded', function(info) {do interesting things};
-Passes back an object with the following properties: 
+### client.info(callback);
+Queries the given server and calls the callback with either an information object or an error. The object has the following properties: 
 { ip: string,
   port: number,
   serverName: string,
@@ -56,6 +54,8 @@ Passes back an object with the following properties:
   pw: boolean,
   secure: boolean }
 
-Sometimes servers will send back a blank info response. This seems to be a protection against an old DOS attack. If a stripped packet is received, an 'error' event will be emitted with an object containing ip and port properties.
+Sometimes servers will send back a blank info response. This seems to be a protection against an old DOS attack. If a stripped packet is received, an 'error' will be returned with an object containing ip and port properties.
 
-You may also listen for all of the events emitted by a standard [dgram](http://nodejs.org/docs/latest/api/dgram.html)
+### client.close()
+
+Cleans up the connection associated with a client.
