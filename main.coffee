@@ -1,4 +1,5 @@
 dgram = require "dgram"
+packet = require "packet"
 EventEmitter = require('events').EventEmitter
 
 PACKETS = 
@@ -8,28 +9,25 @@ PACKETS =
     "0x6e", "0x65", "0x20", "0x51", "0x75", "0x65", "0x72", "0x79", "0x00"
   ]
 
-
-decString = (buf, start, end) ->
-  if end < start
-    ""
-  else if end > buf.length
-    ""
-  else
-    buf.toString "utf8", start, end
-
-decHex = (buf, pos) ->
-  buf.toString "hex", pos, pos + 1
-
-decInt = (buf, pos) ->
-  if pos > buf.length
-    0
-  else
-    buf.readUInt8 pos
-
-decSigned = (buf, pos) ->
-  buf.readInt16LE pos
-
-
+RESPONSES =
+  info: """
+    x32,
+    b8|chr() => type,
+    b8 => version,
+    b8z|utf8() => serverName,
+    b8z|utf8() => map,
+    b8z|utf8() => gameType,
+    b8z|utf8() => gameName,
+    l16 => appID,
+    b8 => numPlayers,
+    b8 => maxPlayers,
+    b8 => numBots,
+    b8|chr() => dedicated,
+    b8|chr() => os,
+    b8 => password,
+    b8 => secure,
+    b8z|utf8() => gameVersion
+  """
 
 class SrcDS extends EventEmitter
   constructor: (ip, port, options={}) ->
@@ -37,7 +35,14 @@ class SrcDS extends EventEmitter
     [@ip, @port, @options] = [ip, port, options]
 
     @client = dgram.createSocket 'udp4'
-    @client.on 'message', @onMsg
+    parser = new packet.Parser()
+    parser._transforms.chr = (parsing, field, value) -> if parsing then String.fromCharCode(value) else value.charCodeAt()
+    parser.extract RESPONSES.info, (msg) =>
+      @onMsg msg
+    @client.on 'message', (msg, rinfo) =>
+      @ip = rinfo.address
+      @port = rinfo.port
+      parser.write msg
 
     @options.timeout ||= 10000
 
@@ -63,48 +68,10 @@ class SrcDS extends EventEmitter
   info: (cb) -> @send PACKETS.info, cb
 
   onMsg: (msg, rinfo) =>
-    decoded =
-      ip: rinfo.address
-      port: rinfo.port
+    decoded = msg
+    decoded.ip = @ip
+    decoded.port = @port
 
-    points = [6]
-    i = 0
-
-    while i < msg.length
-      points.push i  if msg.readUInt8(i) is 0
-      i++
-    if points.length < 3
-      @emit "error", decoded
-      return
-    
-    # Here be dragons.
-    # This protocol is outlined here: https://developer.valvesoftware.com/wiki/Server_Queries#Source_servers
-    # Fields are delimited by 0x00 bytes, however things like whether a password is required may also be 0x00
-    # Case 4 is such a nightmare because after the gameName field we can no longer be certain we won't hit an 0x00 that isn't delimiting a field, but is actually useful information.
-    # For this reason, we don't decode out the game version. If you really need it, it can probably be done by working backwards from the end of the buffer, but I don't want to. Feel free to send a pull request!
-    i = 0
-
-    while i < points.length
-      switch i
-        when 0
-          decoded.serverName = decString(msg, points[i], points[i + 1])
-        when 1
-          decoded.map = decString(msg, (points[i] + 1), points[i + 1])
-        when 2
-          decoded.gameType = decString(msg, (points[i] + 1), points[i + 1])
-        when 3
-          decoded.gameName = decString(msg, (points[i] + 1), points[i + 1])
-        when 4
-          decoded.appID = decSigned(msg, (points[i] + 1))
-          decoded.numPlayers = decInt(msg, (points[i] + 3))
-          decoded.maxPlayers = decInt(msg, (points[i] + 4))
-          decoded.numBots = decInt(msg, (points[i] + 5))
-          decoded.dedicated = decString(msg, (points[i] + 6), (points[i] + 7))
-          decoded.os = decString(msg, (points[i] + 7), (points[i] + 8))
-          decoded.pw = decInt(msg, (points[i] + 8))
-          decoded.secure = decInt(msg, (points[i] + 9))
-      i++
-    
     # Pretty things up a little
     switch decoded.os
       when "l"
